@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A Fracture That Grows Its Own Arrow</title>
+<style>
+  :root{
+    --ink:#080a10; --ink2:#0c0f18; --panel:#0f1524; --panel2:#131a2c; --line:#1d263f;
+    --fg:#e9eef8; --dim:#7c8598; --faint:#4a5268;
+    --teal:#54d6c8; --gold:#f4b64c; --green:#5ce39a; --violet:#a98bff; --red:#e8636f;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{
+    background:radial-gradient(1200px 700px at 50% -20%, #141c31 0%, var(--ink) 55%), var(--ink);
+    color:var(--fg); font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+    padding:34px 20px 60px; min-height:100vh; -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;}
+  .wrap{max-width:1000px; margin:0 auto;}
+  .eyebrow{font-size:11.5px; letter-spacing:3px; text-transform:uppercase; color:var(--faint);
+           font-family:ui-monospace,monospace; margin:0 0 10px;}
+  h1{font-size:clamp(28px,5vw,46px); line-height:1.04; font-weight:300; letter-spacing:-.5px; margin:0 0 14px;}
+  h1 em{font-style:normal; color:var(--teal);}
+  .lede{color:var(--dim); font-size:15px; line-height:1.62; max-width:62ch; margin:0 0 22px;}
+  .lede b{color:var(--fg); font-weight:500;}
+
+  .controls{display:flex; gap:20px; flex-wrap:wrap; align-items:flex-end; margin:0 0 16px;}
+  button{background:var(--panel2); border:1px solid var(--line); color:var(--fg);
+    font-family:ui-monospace,monospace; font-size:13px; padding:11px 18px; border-radius:11px;
+    cursor:pointer; transition:.15s;}
+  button:hover{border-color:var(--teal); color:var(--teal);}
+  button.primary{background:linear-gradient(135deg,#1d6f63,#134a42); border-color:#1d6f63; color:#dffaf3;}
+  button.primary:hover{filter:brightness(1.14); color:#fff;}
+  .slider{display:flex; flex-direction:column; gap:8px; min-width:200px;}
+  .slider .lab{display:flex; justify-content:space-between; font-family:ui-monospace,monospace;
+    font-size:11px; letter-spacing:.5px;}
+  .slider .lab .name{color:var(--faint); text-transform:uppercase; letter-spacing:1.4px;}
+  .slider .lab .val{color:var(--teal);}
+  .slider.hero .lab .name{color:var(--gold);}
+  .slider.hero .lab .val{color:var(--gold);}
+  input[type=range]{-webkit-appearance:none; appearance:none; height:4px; border-radius:3px;
+    background:var(--line); outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:16px; height:16px;
+    border-radius:50%; background:var(--teal); cursor:pointer; box-shadow:0 0 8px rgba(84,214,200,.5);}
+  input[type=range]::-moz-range-thumb{width:16px; height:16px; border:none; border-radius:50%;
+    background:var(--teal); cursor:pointer;}
+  .slider.hero input[type=range]::-webkit-slider-thumb{background:var(--gold); box-shadow:0 0 10px rgba(244,182,76,.6);}
+  .slider.hero input[type=range]::-moz-range-thumb{background:var(--gold);}
+  .hint{font-size:12px; color:var(--faint); font-family:ui-monospace,monospace; align-self:center;}
+
+  .stage{position:relative; border:1px solid var(--line); border-radius:18px; overflow:hidden;
+    background:linear-gradient(180deg,var(--panel) 0%,var(--ink2) 100%);}
+  #canvas{display:block; width:100%; height:520px; cursor:crosshair;}
+  .badge{position:absolute; top:14px; left:16px; font-family:ui-monospace,monospace; font-size:11px;
+    letter-spacing:1.5px; text-transform:uppercase; color:var(--dim);}
+  .badge b{color:var(--teal); font-weight:600;} .badge.chiral b{color:var(--gold);}
+
+  .readout{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; margin-top:1px;
+    background:var(--line); border:1px solid var(--line); border-top:none; border-radius:0 0 18px 18px; overflow:hidden;}
+  .cell{background:var(--panel); padding:15px 16px;}
+  .cell .k{font-size:10.5px; letter-spacing:1.4px; text-transform:uppercase; color:var(--faint);
+    font-family:ui-monospace,monospace; margin-bottom:7px;}
+  .cell .v{font-size:23px; font-weight:300; font-family:ui-monospace,monospace; letter-spacing:-.3px;}
+  .cell .v small{font-size:12px; color:var(--dim);}
+  .v.teal{color:var(--teal);} .v.gold{color:var(--gold);} .v.green{color:var(--green);} .v.violet{color:var(--violet);}
+
+  .legend{display:flex; gap:20px; flex-wrap:wrap; font-size:11.5px; color:var(--dim);
+    font-family:ui-monospace,monospace; margin:16px 2px 0;}
+  .legend span{display:inline-flex; align-items:center; gap:7px;}
+  .sw{width:9px; height:9px; border-radius:50%;}
+
+  .note{color:var(--dim); font-size:13.5px; line-height:1.62; max-width:64ch; margin:28px 0 0;}
+  .note b{color:var(--fg); font-weight:500;} .note .t{color:var(--teal);} .note .g{color:var(--gold);}
+  footer{color:var(--faint); font-size:12px; line-height:1.7; margin-top:34px; max-width:66ch; font-family:ui-monospace,monospace;}
+  footer b{color:var(--dim); font-weight:400;} .sig{color:var(--dim);}
+  @media (max-width:640px){ .readout{grid-template-columns:repeat(2,1fr);} #canvas{height:400px;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">PerceptionLab · emergence × geometric neuron</p>
+  <h1>A fracture that grows<br>its own <em>arrow</em>.</h1>
+  <p class="lede">
+    No blueprint. A seed and a cloud of resource, and one cheap rule every tip obeys: grow toward the
+    nourishment nearby. That symmetric rule alone — pure attraction — fills space in a shapeless,
+    handedness-free bush. This is the wall. Now add a <b>whisper of skew</b> to each tip, a tiny local
+    twist. Magnified across every branch at every scale, that one small asymmetry turns the whole
+    organism into a spiral. Small local difference, profound whole-system arrow — Sapolsky's fractal
+    magnification and the geometric neuron's <span class="mono">S ⊕ A</span>, the same sentence. Turn the
+    arrow knob and watch it appear.
+  </p>
+
+  <div class="controls">
+    <button class="primary" id="regrow">Clear &amp; regrow</button>
+    <div class="slider hero">
+      <div class="lab"><span class="name">Arrow · local skew (A)</span><span class="val" id="skewV">0.00</span></div>
+      <input type="range" id="skew" min="0" max="0.35" step="0.005" value="0">
+    </div>
+    <div class="slider">
+      <div class="lab"><span class="name">Resource density (S)</span><span class="val" id="resV">medium</span></div>
+      <input type="range" id="res" min="600" max="3200" step="100" value="1600">
+    </div>
+    <span class="hint">click the field to plant a seed</span>
+  </div>
+
+  <div class="stage">
+    <canvas id="canvas"></canvas>
+    <div class="badge" id="badge">substrate · <b id="bmode">symmetric · reciprocal</b></div>
+  </div>
+  <div class="readout">
+    <div class="cell"><div class="k">Complexity · nodes</div><div class="v teal" id="rNodes">0</div></div>
+    <div class="cell"><div class="k">Spending · active tips</div><div class="v teal" id="rTips">0</div></div>
+    <div class="cell"><div class="k">Emergent arrow · chirality</div><div class="v teal" id="rChi">0.00</div></div>
+    <div class="cell"><div class="k">Resource left</div><div class="v teal" id="rRes">0<small>%</small></div></div>
+  </div>
+
+  <div class="legend">
+    <span><i class="sw" style="background:var(--teal)"></i>settled branch — dark, cheap</span>
+    <span><i class="sw" style="background:var(--gold)"></i>active tip — spending on surprise</span>
+    <span><i class="sw" style="background:rgba(120,140,175,.5)"></i>resource — the symmetric field</span>
+    <span><i class="sw" style="background:var(--violet)"></i>chiral core</span>
+  </div>
+
+  <p class="note">
+    Each tip only reads the resource right in front of it — no tip knows the tree. The <span class="t">symmetric
+    half</span> is the attraction that fills space; the <span class="g">skew half</span> is the twist that gives
+    the filling a direction. At skew&nbsp;=&nbsp;0 the growth is reciprocal and the net chirality only wanders
+    near zero — whatever handedness appears is chance, and a fresh regrow washes it away. That is the V13 result:
+    structure without an arrow. Turn the skew up and something worth noticing happens — the chirality doesn't just
+    rise, it <b>sharpens</b>: a weak local rule leaves the whole shape at the mercy of noise, but a strong one
+    compounds branch after branch into a coherent, repeatable arrow. Small systematic local bias beats large
+    random noise, once it's magnified. That's the V14 fix, and the reason a fern, a galaxy's arm, and a dendritic
+    tree all curl the same way down their whole length. Growth spends only where resource is unmet; once a region
+    is colonized its tips go dark and the cost falls to nothing. Emergence with an arrow, and a price.
+  </p>
+
+  <footer>
+    <b>What this is:</b> a real space-colonization growth (the algorithm behind leaf venation, coral, and
+    dendritic arbors) with a per-tip chiral bias. Every number is live: node count, active tips, and the
+    net chirality measured from the segments as they form.<br>
+    <b>What it isn't:</b> a claim that the tree feels its growing. "Resource" and "surprise" are the model's
+    words for gradient and unmet demand, not measured biology.<br>
+    <span class="sig">Do not hype. Do not lie. Just show.</span>
+  </footer>
+</div>
+
+<script>
+const cv=document.getElementById('canvas'), ctx=cv.getContext('2d');
+const DPR=Math.min(2,window.devicePixelRatio||1);
+let W=0,H=0;
+function size(){const r=cv.getBoundingClientRect(); W=r.width; H=r.height;
+  cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);}
+window.addEventListener('resize',()=>{const old=W; size(); if(!old) seed();});
+
+/* ---- parameters ---- */
+const ATTRACT=64, KILL=13, SEG=6.2, NOISE=0.12;
+let skew=0, resCount=1600;
+
+/* ---- state ---- */
+let attractors=[], nodes=[], seeds=[];
+let chir=0, chirShow=0, tipsShow=0, chirSum=0, chirCount=0;
+/* spatial hash for node nearest-neighbour */
+let grid=new Map(), cell=ATTRACT;
+const key=(x,y)=>((x/cell)|0)+'_'+((y/cell)|0);
+function gput(n,i){const k=key(n.x,n.y); if(!grid.has(k))grid.set(k,[]); grid.get(k).push(i);}
+function nearestNode(a){
+  const cx=(a.x/cell)|0, cy=(a.y/cell)|0; let best=-1,bd=ATTRACT*ATTRACT;
+  for(let gx=cx-1;gx<=cx+1;gx++)for(let gy=cy-1;gy<=cy+1;gy++){
+    const arr=grid.get(gx+'_'+gy); if(!arr)continue;
+    for(const i of arr){const n=nodes[i]; const dx=a.x-n.x,dy=a.y-n.y,d=dx*dx+dy*dy;
+      if(d<bd){bd=d;best=i;}}
+  }
+  return {i:best, d:Math.sqrt(bd)};
+}
+
+function scatterResource(n){
+  attractors=[];
+  const cx=W/2, cy=H/2, R=Math.min(W,H)*0.46;
+  let tries=0;
+  while(attractors.length<n && tries<n*4){
+    tries++;
+    // organic elliptical cloud, denser toward middle
+    const ang=Math.random()*7, rr=Math.sqrt(Math.random())*R;
+    const x=cx+Math.cos(ang)*rr*(W/Math.min(W,H))*0.9;
+    const y=cy+Math.sin(ang)*rr*0.92;
+    if(x>6&&x<W-6&&y>6&&y<H-6) attractors.push({x,y,alive:true,fade:1});
+  }
+}
+function seed(px,py){
+  grid.clear(); nodes=[];
+  seeds = (px==null)? [{x:W/2,y:H/2}] : [...(seeds||[]),{x:px,y:py}];
+  for(const s of seeds){ const n={x:s.x,y:s.y,px:s.x,py:s.y,depth:0,active:true,age:0}; nodes.push(n); gput(n,nodes.length-1);}
+}
+function reset(){ size(); scatterResource(resCount); seeds=[]; seed(); chir=0; chirSum=0; chirCount=0; }
+
+/* ---- one growth step (cheap local rule, per tip) ---- */
+function step(){
+  if(nodes.length>7000) return;
+  const infl=new Map();               // nodeIndex -> {dx,dy,c}
+  let anyAlive=false;
+  for(const a of attractors){
+    if(!a.alive){ a.fade*=0.90; continue; }
+    anyAlive=true;
+    const {i,d}=nearestNode(a);
+    if(i<0) continue;
+    if(d<KILL){ a.alive=false; continue; }         // consumed
+    if(d<ATTRACT){
+      const n=nodes[i], nx=(a.x-n.x)/d, ny=(a.y-n.y)/d;
+      const e=infl.get(i)||{dx:0,dy:0,c:0}; e.dx+=nx; e.dy+=ny; e.c++; infl.set(i,e);
+    }
+  }
+  // grow new tips
+  let grew=0, cx=W/2, cy=H/2;
+  infl.forEach((e,i)=>{
+    const n=nodes[i]; let dx=e.dx/e.c, dy=e.dy/e.c;
+    let L=Math.hypot(dx,dy)||1; dx/=L; dy/=L;
+    // chiral skew: rotate the growth direction by `skew` (the local A)
+    const c=Math.cos(skew), s=Math.sin(skew);
+    const rx=dx*c-dy*s, ry=dx*s+dy*c;
+    dx=rx+ (Math.random()-0.5)*NOISE; dy=ry+ (Math.random()-0.5)*NOISE;
+    L=Math.hypot(dx,dy)||1; dx/=L; dy/=L;
+    const child={x:n.x+dx*SEG, y:n.y+dy*SEG, px:n.x, py:n.y, depth:n.depth+1, active:true, age:0};
+    n.active=false;
+    nodes.push(child); gput(child,nodes.length-1);
+    // emergent chirality = mean pitch: cross(radial_unit, segment_unit), plain running mean
+    const mx=(n.x+child.x)/2-cx, my=(n.y+child.y)/2-cy, rl=Math.hypot(mx,my)||1;
+    chirSum += (mx/rl)*dy - (my/rl)*dx; chirCount++;
+    grew++;
+  });
+  if(chirCount>0) chir=chirSum/chirCount;
+  return {grew, anyAlive};
+}
+
+/* ---- draw ---- */
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  // resource cloud (the symmetric field), fading as consumed
+  for(const a of attractors){
+    if(a.fade<0.02) continue;
+    ctx.beginPath(); ctx.arc(a.x,a.y,1.3,0,7);
+    ctx.fillStyle=`rgba(120,140,175,${0.22*a.fade})`; ctx.fill();
+  }
+  // branches: colour by depth (trunk teal -> tips violet at high chirality)
+  let tips=0; const chAbs=Math.min(1,Math.abs(chirShow)*2.2);
+  ctx.lineWidth=1.3; ctx.lineCap='round';
+  for(const n of nodes){
+    if(n.depth===0) continue;
+    const t=Math.min(1,n.depth/120);
+    const r=Math.round(84+ (169-84)*t*chAbs);
+    const g=Math.round(214 - 70*t*chAbs);
+    const b=Math.round(200 + (255-200)*t*chAbs);
+    ctx.strokeStyle=`rgba(${r},${g},${b},${0.72})`;
+    ctx.beginPath(); ctx.moveTo(n.px,n.py); ctx.lineTo(n.x,n.y); ctx.stroke();
+  }
+  // active tips glow gold-green (spending on surprise)
+  for(const n of nodes){
+    if(!n.active) continue; tips++;
+    ctx.beginPath(); ctx.arc(n.x,n.y,2.2,0,7);
+    ctx.fillStyle='#f4d17a'; ctx.shadowColor='#f4b64c'; ctx.shadowBlur=8; ctx.fill(); ctx.shadowBlur=0;
+  }
+  // seeds as violet cores
+  for(const s of seeds){ ctx.beginPath(); ctx.arc(s.x,s.y,3.5,0,7);
+    ctx.fillStyle='#a98bff'; ctx.shadowColor='#a98bff'; ctx.shadowBlur=12; ctx.fill(); ctx.shadowBlur=0; }
+  return tips;
+}
+
+let tPrev=performance.now();
+function loop(now){
+  const speed=4;
+  let res=null;
+  for(let k=0;k<speed;k++) res=step();
+  const tips=draw();
+
+  // smooth readouts
+  chirShow += (chir-chirShow)*0.08;
+  tipsShow += (tips-tipsShow)*0.2;
+  const aliveN=attractors.reduce((s,a)=>s+(a.alive?1:0),0);
+  const resPct=attractors.length? Math.round(100*aliveN/attractors.length):0;
+
+  document.getElementById('rNodes').textContent=nodes.length.toLocaleString();
+  const rt=document.getElementById('rTips'); rt.textContent=Math.round(tipsShow);
+  rt.className='v '+(tipsShow>1?'gold':'teal');
+  const rc=document.getElementById('rChi'); rc.textContent=(chirShow>=0?'+':'')+chirShow.toFixed(2);
+  rc.className='v '+(Math.abs(chirShow)>0.10?'violet':'teal');
+  document.getElementById('rRes').innerHTML=resPct+'<small>%</small>';
+
+  const badge=document.getElementById('badge'), bmode=document.getElementById('bmode');
+  if(skew<0.01){ badge.classList.remove('chiral'); bmode.textContent='symmetric · reciprocal'; }
+  else{ badge.classList.add('chiral'); bmode.textContent='chiral · arrow generated'; }
+
+  requestAnimationFrame(loop);
+}
+
+/* ---- controls ---- */
+document.getElementById('regrow').onclick=reset;
+document.getElementById('skew').addEventListener('input',e=>{
+  skew=+e.target.value; document.getElementById('skewV').textContent=skew.toFixed(2);
+});
+document.getElementById('res').addEventListener('input',e=>{
+  resCount=+e.target.value;
+  document.getElementById('resV').textContent = resCount<1100?'sparse':resCount<2200?'medium':'dense';
+});
+cv.addEventListener('click',e=>{
+  const r=cv.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top;
+  // plant a seed and sprinkle fresh resource around it
+  const n={x,y,px:x,py:y,depth:0,active:true,age:0}; seeds.push({x,y}); nodes.push(n); gput(n,nodes.length-1);
+  for(let i=0;i<160;i++){const ang=Math.random()*7, rr=Math.random()*70;
+    attractors.push({x:x+Math.cos(ang)*rr, y:y+Math.sin(ang)*rr, alive:true, fade:1});}
+});
+
+/* boot */
+size(); reset(); requestAnimationFrame(loop);
+</script>
+</body>
+</html>
