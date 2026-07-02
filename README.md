@@ -1,5 +1,7 @@
 # A Fracture That Grows Its Own Arrow
 
+![pic](pic.png)
+
 ### Sapolsky's fractal magnification and the geometric neuron's `S ⊕ A`, in one self-organizing thing you can watch grow.
 
 **Live:** https://anttiluode.github.io/GeometricNeuronAndSapolskysFractal/
